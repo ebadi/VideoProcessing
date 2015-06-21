@@ -1,0 +1,5 @@
+cmake_minimum_required(VERSION 2.8)
+project( lsdvideo )
+find_package( OpenCV REQUIRED )
+add_executable( lsdvideo lsdvideo.cpp )
+target_link_libraries( lsdvideo ${OpenCV_LIBS} )
