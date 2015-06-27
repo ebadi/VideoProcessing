@@ -1,28 +1,25 @@
 #include <iostream> // for standard I/O
 #include <sstream>  // string to number conversion
 #include <fstream>
-#include <opencv2/core/core.hpp> 
+#include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/videoio/videoio.hpp>
-#include <opencv2/highgui/highgui.hpp> 
+#include <opencv2/highgui/highgui.hpp>
 
+
+#define STATE_PLAYING 0
+#define STATE_RECORDING 1 // save as it is
+#define STATE_EDITING 2  // editing & recording
+#define STATE_NEXTFRAME 3 // almost like editing, load next frame
 using namespace std;
 using namespace cv;
-bool playing = true ; 
-static void help()
-{
-    cout
-        << "------------------------------------------------------------------------------" << endl
-        << "This program applys LSD filter to a video  "
-        << "Usage:"                                                                         << endl
-        << "./lsd video.avi Wait_Between_Frames " << endl
-        << "------------------------------------------------------------------------------" << endl
-        << endl;
-}
+void help() ;
 void CallBackFunc(int event, int x, int y, int flags, void* userdata) ;
+
+int state  = STATE_PLAYING ;
 int main(int argc, char *argv[])
 {
-    if (argc != 2)
+    if (argc != 3)
     {
         help();
         cout << "Not enough parameters" << endl;
@@ -32,7 +29,7 @@ int main(int argc, char *argv[])
     stringstream conv;
 
     const string sourceReference = argv[1];
-
+    const string output = argv[2];
     char key;
     int frameNum = 0;
 
@@ -46,65 +43,70 @@ int main(int argc, char *argv[])
 
     Size refS = Size((int) captRefrnc.get(CAP_PROP_FRAME_WIDTH),
                      (int) captRefrnc.get(CAP_PROP_FRAME_HEIGHT));
-    const char* WIN_RF = "Video";
+    const char* WIN_RF = "LSD editor";
 
     // Windows
     namedWindow(WIN_RF, WINDOW_AUTOSIZE);
-    moveWindow(WIN_RF, 400       , 0);
+    //moveWindow(WIN_RF, 400 , 0);
 
     Mat frame;
     Mat gray;
 
     ofstream fh;
-    fh.open ("out.txt");
-    bool nextframe = false ;
-    while(1)
-    {
-        nextframe = false;
-        frameNum++;
-        do {
-             captRefrnc >> frame;
-        } while(frame.empty()) ; //some frames may be empty
-        cvtColor(frame, gray, CV_BGR2GRAY);
+    fh.open (output.c_str());
 
-        Ptr<LineSegmentDetector> ls = createLineSegmentDetector(LSD_REFINE_STD);
-        vector<Vec4f> lines_std;
-        // Detect the lines
-        ls->detect(gray, lines_std);
-        Mat empty(refS.height, refS.width, CV_8UC3, Scalar(0,0,0)); //empty image
-        ls->drawSegments(empty, lines_std);
+    int N ;
+    Mat _lines;
+    vector<Vec4f> lines_lsd;
+    Ptr<LineSegmentDetector> ls ;
+    Mat empty(refS.height, refS.width, CV_8UC3, Scalar(0,0,0)); // empty image
+    while(1){
+        if(state == STATE_PLAYING || state == STATE_RECORDING || state == STATE_NEXTFRAME){
+          empty = Mat::zeros(refS.height, refS.width, CV_8UC3);
+          frameNum++;
+          do captRefrnc >> frame;
+             while(frame.empty()) ; //some frames may be empty
+          cvtColor(frame, gray, CV_BGR2GRAY);
+          ls = createLineSegmentDetector(LSD_REFINE_STD);
+          ls->detect(gray, lines_lsd);
+          ls->drawSegments(empty, lines_lsd);
+          waitKey(1); // Don't remove this.
+          imshow(WIN_RF, empty);
+          setMouseCallback(WIN_RF, CallBackFunc, NULL);
 
-        InputArray lines = lines_std ;
-        Mat _lines;
-        _lines = lines.getMat();
-        int N = _lines.checkVector(4);
-        waitKey(1);
-            if(playing==false )
-            {
-            key = waitKey(0);
+          if (state == STATE_NEXTFRAME) state = STATE_EDITING;
+        } else { // (state == STATE_EDITING )
+            key = waitKey(100); // read command
             switch(key){
-            case 27: return 0 ;
-            case 'r':
-                cout << "rrrrrr" <<endl ;
+            case 'q': return 0 ; //quit
+            case 'l': // add a line
+                cout << "Add" <<endl ;
                 break;
-            case 'n':
-                cout << "nnnnnn" <<endl ;
+            case 'r': // remove lines
+                cout << "Remove" <<endl ;
+                // TODO : unwrap vector<Vec4f> , edit and wrap
+                // probably using push_back ? 
+
                 break;
-            case 's':
+            case 's': //save, next frame
+
                 cout << "Recorded" << endl ;
                 fh << "frame:" << frameNum << endl;
                 fh << "lines:" << N << endl;
+
+                InputArray lines = lines_lsd ;
+                _lines = lines.getMat();
+                N = _lines.checkVector(4);
                 for(int i = 0; i < N; ++i)
                 {
                     const Vec4f& v = _lines.at<Vec4f>(i);
                     fh <<  v[0] << ","<<  v[1] << ","<<  v[2] << ","<<  v[3] << endl;
                 }
-                nextframe= true ;
+                state == STATE_NEXTFRAME ;
                 break;
              }
          }
-        imshow(WIN_RF, empty);
-        setMouseCallback(WIN_RF, CallBackFunc, NULL);
+
     }
     fh.close();
     return 0;
@@ -114,21 +116,32 @@ int main(int argc, char *argv[])
 void CallBackFunc(int event, int x, int y, int flags, void* userdata)
 {
 switch( event ){
-    case CV_EVENT_LBUTTONDOWN: 
+    case CV_EVENT_LBUTTONDOWN:
         cout << "CV_EVENT_LBUTTONDOWN"<<endl ;
-        playing = !playing ;
+        if (state == STATE_EDITING) {
+          state = STATE_PLAYING ;
+        }else {
+          state = STATE_EDITING ;
+        }
         break;
+    //case CV_EVENT_RBUTTONUP:
     case CV_EVENT_RBUTTONDOWN:
         cout << "CV_EVENT_RBUTTONDOWN" <<endl;
         break;
-    case CV_EVENT_RBUTTONUP:
-        cout << "CV_EVENT_RBUTTONUP" <<endl;
-        break;
+
+    //case CV_EVENT_MBUTTONDOWN:
     case CV_EVENT_MBUTTONDOWN:
         cout << "CV_EVENT_MBUTTONDOWN" <<endl;
         break;
-    case CV_EVENT_MBUTTONUP:
-        cout << "CV_EVENT_MBUTTONUP" <<endl;
-        break;
     }
+}
+
+void help()
+{
+    cout
+        << "------------------------------------------------------------------------------" << endl
+        << "This program applys LSD filter to a video  "                                    << endl
+        << "Usage:"                                                                         << endl
+        << "./lsd video.avi output.lsd "                                                    << endl
+        << "------------------------------------------------------------------------------" << endl << endl;
 }
