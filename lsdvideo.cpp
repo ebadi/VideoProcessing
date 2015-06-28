@@ -114,7 +114,7 @@ int main(int argc, char *argv[])
                   fh <<  lines_lsd[i][0] << ","<<  lines_lsd[i][1] << ","
                      <<  lines_lsd[i][2] << ","<<  lines_lsd[i][3] << endl;
                 }
-                state == STATE_NEXTFRAME ;
+                state = STATE_NEXTFRAME ;
                 break;
              }
          }
