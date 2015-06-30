@@ -61,6 +61,7 @@ int main(int argc, char *argv[])
     int N ;
     Mat _lines;
     vector<Vec4f> lines_lsd;
+    vector<Vec4f> previous_state;
     Ptr<LineSegmentDetector> ls ;
     int minx, maxx, miny, maxy;
     Mat empty(refS.height, refS.width, CV_8UC3, Scalar(0,0,0)); // empty image
@@ -75,16 +76,23 @@ int main(int argc, char *argv[])
           cvtColor(frame, gray, CV_BGR2GRAY);
           ls = createLineSegmentDetector(LSD_REFINE_STD);
           ls->detect(gray, lines_lsd);
+          previous_state = lines_lsd;
           if (state == STATE_NEXTFRAME) state = STATE_EDITING;
         } else { // (state == STATE_EDITING )
             key = waitKey(100); // read command
             switch(key){
             case 'q': return 0 ; //quit
+            case 'u': 
+                lines_lsd = previous_state ;
+                cout << "Undo" <<endl ;
+                break;
             case 'a': // add a line
+                previous_state = lines_lsd;
                 cout << "Add" <<endl ;
                 lines_lsd.push_back(Vec4f(mouseX1,mouseY1, mouseX2, mouseY2)  );
                 break;
             case 'r': // remove lines
+                previous_state = lines_lsd;
                 cout << "Remove" <<endl ;
                   // TODO : unwrap vector<Vec4f> , edit and wrap
                 minx = min(mouseX1, mouseX2);
@@ -107,6 +115,7 @@ int main(int argc, char *argv[])
                 }
                 break;
             case 's': //save, next frame
+                previous_state.clear();
                 cout << "Recorded" << endl ;
                 fh << "frame:" << frameNum << endl;
                 fh << "lines:" <<  lines_lsd.size() << endl;
