@@ -57,7 +57,7 @@ int main(int argc, char *argv[])
 
     ofstream fh;
     fh.open (output.c_str());
-
+    int line_size_limit ;
     int N ;
     Mat _lines;
     vector<Vec4f> lines_lsd;
@@ -71,6 +71,7 @@ int main(int argc, char *argv[])
           mouseX1=0;  mouseY1=0 ; mouseX2=0;  mouseY2=0;
           empty = Mat::zeros(refS.height, refS.width, CV_8UC3);
           frameNum++;
+          line_size_limit =1 ;
           do captRefrnc >> frame;
              while(frame.empty()) ; //some frames may be empty
           cvtColor(frame, gray, CV_BGR2GRAY);
@@ -81,8 +82,10 @@ int main(int argc, char *argv[])
         } else { // (state == STATE_EDITING )
             key = waitKey(100); // read command
             switch(key){
-            case 'q': return 0 ; //quit
-            case 'u': 
+            case 'q':
+                fh.close();
+                return 0 ; //quit
+            case 'u': // undo
                 lines_lsd = previous_state ;
                 cout << "Undo" <<endl ;
                 break;
@@ -90,6 +93,16 @@ int main(int argc, char *argv[])
                 previous_state = lines_lsd;
                 cout << "Add" <<endl ;
                 lines_lsd.push_back(Vec4f(mouseX1,mouseY1, mouseX2, mouseY2)  );
+                break;
+            case 'c': // cleaning short lines
+                previous_state = lines_lsd;
+                for(int i=0 ; i < lines_lsd.size() ;  i++ ){
+                  if (fabs(pow(lines_lsd[i][0]- lines_lsd[i][2],2) +  pow(lines_lsd[i][1]- lines_lsd[i][3],2) ) < line_size_limit * line_size_limit ) {
+                      lines_lsd.erase(lines_lsd.begin() + i);
+                      i--;
+                    }
+                }
+                line_size_limit ++ ;
                 break;
             case 'r': // remove lines
                 previous_state = lines_lsd;
@@ -111,6 +124,7 @@ int main(int argc, char *argv[])
                       && lines_lsd[i][3] < maxy
                     )) {
                       lines_lsd.erase(lines_lsd.begin() + i);
+                      i--;
                     }
                 }
                 break;
@@ -132,7 +146,6 @@ int main(int argc, char *argv[])
          imshow(WIN_RF, empty);
          setMouseCallback(WIN_RF, CallBackFunc, NULL);
     }
-    fh.close();
     return 0;
 }
 
