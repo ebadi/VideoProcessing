@@ -1,5 +1,5 @@
-#include <iostream> // for standard I/O
-#include <sstream>  // string to number conversion
+#include <iostream>
+#include <sstream>
 #include <fstream>
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -11,6 +11,7 @@
 #define STATE_RECORDING 1 // save as it is
 #define STATE_EDITING 2  // editing & recording
 #define STATE_NEXTFRAME 3 // almost like editing, load next frame
+
 using namespace std;
 using namespace cv;
 void help() ;
@@ -64,12 +65,12 @@ int main(int argc, char *argv[])
     vector<Vec4f> previous_state;
     Ptr<LineSegmentDetector> ls ;
     int minx, maxx, miny, maxy;
-    Mat empty(refS.height, refS.width, CV_8UC3, Scalar(0,0,0)); // empty image
+    Mat empty(refS.height, refS.width, CV_8UC1, Scalar(0,0,0)); // empty image
     while(1){
         if(state == STATE_PLAYING || state == STATE_RECORDING || state == STATE_NEXTFRAME){
           cout << "loading a frame" ;
           mouseX1=-1;  mouseY1=-1 ; mouseX2=-1;  mouseY2=-1;
-          empty = Mat::zeros(refS.height, refS.width, CV_8UC3);
+          empty = Mat::zeros(refS.height, refS.width, CV_8UC1);
           frameNum++;
           line_size_limit =1 ;
           do captRefrnc >> frame;
@@ -107,7 +108,6 @@ int main(int argc, char *argv[])
             case 'r': // remove lines
                 previous_state = lines_lsd;
                 cout << "Remove" <<endl ;
-                  // TODO : unwrap vector<Vec4f> , edit and wrap
                 minx = min(mouseX1, mouseX2);
                 maxx = max(mouseX1, mouseX2);
                 miny = min(mouseY1, mouseY2);
