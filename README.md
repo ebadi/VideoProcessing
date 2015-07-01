@@ -29,10 +29,17 @@ cmake .
 killall -9 lsdvideo ; make ; ./lsdvideo bird.avi  out.lsd 
 ```
 ##Output
-Output is stored in a (.lsd) file with this format
+Output is stored in a (.lsd) file with this simple format
+``` 
 frame:INT   <- framenumber in the original video
 lines:INT   <- number of lines in this frame
 line1_X1,line1_Y1,line1_X2,line1_Y2
 line2_X1,line2_Y1,line2_X2,line2_Y2
+.
+.
+.
+frame:INT
+lines:INT
+``` 
 
 Hamid Ebadi
