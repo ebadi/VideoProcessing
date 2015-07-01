@@ -67,7 +67,7 @@ int main(int argc, char *argv[])
     while(1){
         if(state == STATE_PLAYING || state == STATE_RECORDING || state == STATE_NEXTFRAME){
           cout << "loading a frame" ;
-          mouseX1=0;  mouseY1=0 ; mouseX2=0;  mouseY2=0;
+          mouseX1=-1;  mouseY1=-1 ; mouseX2=-1;  mouseY2=-1;
           empty = Mat::zeros(refS.height, refS.width, CV_8UC3);
           frameNum++;
           do captRefrnc >> frame;
@@ -103,6 +103,7 @@ int main(int argc, char *argv[])
                       && lines_lsd[i][3] < maxy
                     )) {
                       lines_lsd.erase(lines_lsd.begin() + i);
+                      i -- ;  // new indexes when an index is removed
                     }
                 }
                 break;
@@ -119,6 +120,13 @@ int main(int argc, char *argv[])
              }
          }
          ls->drawSegments(empty, lines_lsd);
+         if (mouseX1 > 0 && mouseY1 > 0 ){
+           circle(empty, Point( mouseX1, mouseY1) , 3, Scalar( 255, 0 , 255 ), 1, 8, 0);
+         }
+         if (mouseX2 > 0 && mouseY2 > 0 ){
+           circle(empty, Point( mouseX2, mouseY2) , 3, Scalar( 255, 0 , 0 ), 1, 8, 0);
+         }
+
          waitKey(1); // Don't remove this.
          imshow(WIN_RF, empty);
          setMouseCallback(WIN_RF, CallBackFunc, NULL);
