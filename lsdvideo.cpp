@@ -19,6 +19,9 @@ void CallBackFunc(int event, int x, int y, int flags, void* userdata) ;
 inline int max(int a, int b) { return a > b ? a : b;}
 inline int min(int a, int b) { return a < b ? a : b;}
 
+
+inline double distance(double pnt1x, double pnt1y, double pnt2x, double pnt2y) { return fabs(pow(pnt1x-pnt2x,2) +  pow(pnt1y-pnt2y,2) ) ;  }
+
 int mouseX1=0, mouseY1=0, mouseX2=0, mouseY2=0;
 int state  = STATE_PLAYING ;
 int main(int argc, char *argv[])
@@ -58,7 +61,7 @@ int main(int argc, char *argv[])
 
     ofstream fh;
     fh.open (output.c_str());
-    int line_size_limit ;
+    int size_limit ;
     int N ;
     Mat _lines;
     vector<Vec4f> lines_lsd;
@@ -72,7 +75,7 @@ int main(int argc, char *argv[])
           mouseX1=-1;  mouseY1=-1 ; mouseX2=-1;  mouseY2=-1;
           empty = Mat::zeros(refS.height, refS.width, CV_8UC1);
           frameNum++;
-          line_size_limit =1 ;
+          size_limit =1 ;
           do captRefrnc >> frame;
              while(frame.empty()) ; //some frames may be empty
           cvtColor(frame, gray, CV_BGR2GRAY);
@@ -98,12 +101,12 @@ int main(int argc, char *argv[])
             case 'c': // cleaning short lines
                 previous_state = lines_lsd;
                 for(int i=0 ; i < lines_lsd.size() ;  i++ ){
-                  if (fabs(pow(lines_lsd[i][0]- lines_lsd[i][2],2) +  pow(lines_lsd[i][1]- lines_lsd[i][3],2) ) < line_size_limit * line_size_limit ) {
+                  if (distance(lines_lsd[i][0],lines_lsd[i][1], lines_lsd[i][2], lines_lsd[i][3] ) < size_limit * size_limit ) {
                       lines_lsd.erase(lines_lsd.begin() + i);
                       i--;
                     }
                 }
-                line_size_limit ++ ;
+                size_limit ++ ;
                 break;
             case 'r': // remove lines
                 previous_state = lines_lsd;
@@ -127,6 +130,25 @@ int main(int argc, char *argv[])
                       i-- ;  // new indexes when an index is removed
                     }
                 }
+                break;
+            case 'j':
+                previous_state = lines_lsd;
+                cout << "Curly" <<endl ;
+                for(int i= 0 ; i <  lines_lsd.size(); i++){
+                    for (int j= i+1; j< lines_lsd.size(); j++){
+                        if (
+                            distance(lines_lsd[i][0],lines_lsd[i][1], lines_lsd[j][2], lines_lsd[j][3] ) < size_limit
+                            // TODO: add the other case
+                         ) {
+
+                          // TODO : draw a curly line with control points
+
+                           lines_lsd.erase(lines_lsd.begin() + i);
+                           i-- ;  // new indexes when an index is removed
+                         }
+                    }
+                }
+                size_limit ++ ;
                 break;
             case 's': //save, next frame
                 previous_state.clear();
