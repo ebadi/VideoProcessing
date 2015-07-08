@@ -14,7 +14,6 @@ LSD Video Editor makes video editing easier :)
 
 ##TODO: 
 - Use polylines instead of lines for nearby lines (probably just in an area)
-- Improve undo
 - Color 
 - Fix problem with removing lines
 

@@ -18,12 +18,11 @@ void help() ;
 void CallBackFunc(int event, int x, int y, int flags, void* userdata) ;
 inline int max(int a, int b) { return a > b ? a : b;}
 inline int min(int a, int b) { return a < b ? a : b;}
-
-
 inline double distance(double pnt1x, double pnt1y, double pnt2x, double pnt2y) { return fabs(pow(pnt1x-pnt2x,2) +  pow(pnt1y-pnt2y,2) ) ;  }
 
 int mouseX1=0, mouseY1=0, mouseX2=0, mouseY2=0;
 int state  = STATE_PLAYING ;
+
 int main(int argc, char *argv[])
 {
     if (argc != 3)
@@ -32,8 +31,6 @@ int main(int argc, char *argv[])
         cout << "Not enough parameters" << endl;
         return -1;
     }
-
-    stringstream conv;
 
     const string sourceReference = argv[1];
     const string output = argv[2];
@@ -65,12 +62,13 @@ int main(int argc, char *argv[])
     int N ;
     Mat _lines;
     vector<Vec4f> lines_lsd;
-    vector<Vec4f> previous_state;
+    vector<vector<Vec4f> > stateVec ;
     Ptr<LineSegmentDetector> ls ;
     int minx, maxx, miny, maxy;
     Mat empty(refS.height, refS.width, CV_8UC1, Scalar(0,0,0)); // empty image
     while(1){
         if(state == STATE_PLAYING || state == STATE_RECORDING || state == STATE_NEXTFRAME){
+          stateVec.clear() ;
           cout << "loading a frame" ;
           mouseX1=-1;  mouseY1=-1 ; mouseX2=-1;  mouseY2=-1;
           empty = Mat::zeros(refS.height, refS.width, CV_8UC1);
@@ -81,7 +79,8 @@ int main(int argc, char *argv[])
           cvtColor(frame, gray, CV_BGR2GRAY);
           ls = createLineSegmentDetector(LSD_REFINE_STD);
           ls->detect(gray, lines_lsd);
-          previous_state = lines_lsd;
+          stateVec.push_back(lines_lsd);
+
           if (state == STATE_NEXTFRAME) state = STATE_EDITING;
         } else { // (state == STATE_EDITING )
             key = waitKey(100); // read command
@@ -90,16 +89,21 @@ int main(int argc, char *argv[])
                 fh.close();
                 return 0 ; //quit
             case 'u': // undo
-                lines_lsd = previous_state ;
-                cout << "Undo" <<endl ;
+                if(!stateVec.empty()){
+                    lines_lsd = stateVec.back();
+                    stateVec.pop_back();
+                    cout << "Undo" <<endl ;
+                }else{
+                    cout << "Undo blocked" << endl ;
+                }
                 break;
             case 'a': // add a line
-                previous_state = lines_lsd;
+                stateVec.push_back(lines_lsd) ;
                 cout << "Add" <<endl ;
                 lines_lsd.push_back(Vec4f(mouseX1,mouseY1, mouseX2, mouseY2)  );
                 break;
-            case 'c': // cleaning short lines
-                previous_state = lines_lsd;
+            case 'c': // removing short lines
+                stateVec.push_back(lines_lsd) ;
                 for(int i=0 ; i < lines_lsd.size() ;  i++ ){
                   if (distance(lines_lsd[i][0],lines_lsd[i][1], lines_lsd[i][2], lines_lsd[i][3] ) < size_limit * size_limit ) {
                       lines_lsd.erase(lines_lsd.begin() + i);
@@ -109,7 +113,7 @@ int main(int argc, char *argv[])
                 size_limit ++ ;
                 break;
             case 'r': // remove lines
-                previous_state = lines_lsd;
+                stateVec.push_back(lines_lsd) ;
                 cout << "Remove" <<endl ;
                 minx = min(mouseX1, mouseX2);
                 maxx = max(mouseX1, mouseX2);
@@ -131,27 +135,9 @@ int main(int argc, char *argv[])
                     }
                 }
                 break;
-            case 'j':
-                previous_state = lines_lsd;
-                cout << "Curly" <<endl ;
-                for(int i= 0 ; i <  lines_lsd.size(); i++){
-                    for (int j= i+1; j< lines_lsd.size(); j++){
-                        if (
-                            distance(lines_lsd[i][0],lines_lsd[i][1], lines_lsd[j][2], lines_lsd[j][3] ) < size_limit
-                            // TODO: add the other case
-                         ) {
-
-                          // TODO : draw a curly line with control points
-
-                           lines_lsd.erase(lines_lsd.begin() + i);
-                           i-- ;  // new indexes when an index is removed
-                         }
-                    }
-                }
-                size_limit ++ ;
-                break;
             case 's': //save, next frame
-                previous_state.clear();
+                stateVec.clear() ;
+
                 cout << "Recorded" << endl ;
                 fh << "frame:" << frameNum << endl;
                 fh << "lines:" <<  lines_lsd.size() << endl;
