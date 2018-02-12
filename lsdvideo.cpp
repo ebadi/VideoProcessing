@@ -203,10 +203,10 @@ return
 */
 int merge_2lines( Vec4f l1, Vec4f l2, double gr, double dist){
    if ( fabs(line_gradient(l1) - line_gradient(l2) ) < gr ){
-     if ( X1(line_size(l1) + line_size(l2)) / sqrt(distance_pow2(l1[0], l1[1], l2[0] , l2[1])), dist)) return 1 ;
-     if ( X1(line_size(l1) + line_size(l2)) / sqrt(distance_pow2(l1[0], l1[1], l2[2] , l2[3])), dist)) return 2 ;
-     if ( X1(line_size(l1) + line_size(l2)) / sqrt(distance_pow2(l1[2], l1[3], l2[0] , l2[1])), dist)) return 3 ;
-     if ( X1(line_size(l1) + line_size(l2)) / sqrt(distance_pow2(l1[2], l1[3], l2[2] , l2[3])), dist)) return 4 ;
+     if ( X1(line_size(l1) + line_size(l2) / sqrt(distance_pow2(l1[0], l1[1], l2[0] , l2[1])), dist)) return 1 ;
+     if ( X1(line_size(l1) + line_size(l2) / sqrt(distance_pow2(l1[0], l1[1], l2[2] , l2[3])), dist)) return 2 ;
+     if ( X1(line_size(l1) + line_size(l2) / sqrt(distance_pow2(l1[2], l1[3], l2[0] , l2[1])), dist)) return 3 ;
+     if ( X1(line_size(l1) + line_size(l2) / sqrt(distance_pow2(l1[2], l1[3], l2[2] , l2[3])), dist)) return 4 ;
      return 0;
    } else return 0;
  }
